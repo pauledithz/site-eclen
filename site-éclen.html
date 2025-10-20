@@ -97,11 +97,11 @@
         <h2 class="section-title">Contactez-nous</h2>
         
         <div class="contact-form">
-            <div class="success-message" id="successMessage">
-                ✓ Merci pour votre message ! Nous vous répondrons le plu rapidement possible.
+            <div class="success-message" id="successMessage" style="display:none;">
+                ✓ Merci pour votre message ! Nous vous répondrons le plus rapidement possible.
             </div>
             
-            <form onsubmit="handleSubmit(event)">
+            <form id="contactForm" onsubmit="handleSubmit(event)">
                 <div class="form-group">
                     <label for="nom">Nom complet *</label>
                     <input type="text" id="nom" name="nom" required>
@@ -158,8 +158,8 @@
         <p>&copy; 2025 Église éclen - Tous droits réservés</p>
         <p style="margin-top: 0.5rem; font-size: 0.95rem;">Que la grâce et la paix vous soient données en abondance</p>
     </footer>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="site-éclen.js"></script>
 </body>
-
-<script src="site-éclen.js"></script>
-
 </html>
