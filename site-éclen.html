@@ -4,23 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="site-éclen.css">
-    <title>Église éclen - Bienvenue</title>
+    <title>Église Éclen Christ Lumière - Bienvenue</title>
 </head>
 <body>
     <header>
-        <nav>
-            <div class="logo"><span class="logo-badge">✝</span>Église éclen christ lumière</div>
-            <ul class="nav-links">
-                <li><a href="#" onclick="showSection('accueil')">Accueil</a></li>
-                <li><a href="#" onclick="showSection('documentation')">Documentation</a></li>
-                <li><a href="#" onclick="showSection('contact')">Contact</a></li>
+        <nav aria-label="Navigation principale">
+            <div class="logo"><span class="logo-badge" aria-hidden="true">✝</span> Église Éclen Christ Lumière</div>
+            <ul class="nav-links" role="menubar">
+                <li role="none"><a role="menuitem" href="#" onclick="showSection('accueil')" aria-label="Aller à l'accueil">Accueil</a></li>
+                <li role="none"><a role="menuitem" href="#" onclick="showSection('documentation')" aria-label="Aller à la documentation">Documentation</a></li>
+                <li role="none"><a role="menuitem" href="#" onclick="showSection('contact')" aria-label="Aller au contact">Contact</a></li>
             </ul>
         </nav>
     </header>
 
     <div class="hero" id="hero-section">
         <div class="hero-content">
-            <h1>Bienvenue à l'Église éclen christ lumière</h1>
+            <h1>Bienvenue à l'Église Éclen Christ Lumière</h1>
             <p>Une église de foi, d'abondance et d'amour</p>
         </div>
     </div>
@@ -43,7 +43,7 @@
 
             <div class="card">
                 <h3>👥 Rejoignez-nous</h3>
-                <p>Que vous soyez nouveau dans la foi ou chrétien de longue date, vous êtes les bienvenus dans notre grande famille spirituelle qui croit au christ.</p>
+                <p>Que vous soyez nouveau dans la foi ou chrétien de longue date, vous êtes les bienvenus dans notre grande famille spirituelle qui croit en Christ.</p>
             </div>
         </div>
 
@@ -79,7 +79,7 @@
 
         <div class="doc-section">
             <h3>🎓 Formation pour tous</h3>
-            <p>Nous proposons des programmes de formation spirituelle pour tous les âges : école du dimanche pour les enfants, groupes de JGF (groupe de jeune), classes pour adultes, et cours de bathème.</p>
+            <p>Nous proposons des programmes de formation spirituelle pour tous les âges : école du dimanche pour les enfants, groupes de jeunes (JGF), classes pour adultes, et cours de baptême.</p>
         </div>
 
         <div class="doc-section">
@@ -101,45 +101,45 @@
                 ✓ Merci pour votre message ! Nous vous répondrons le plus rapidement possible.
             </div>
             
-            <form id="contactForm" onsubmit="handleSubmit(event)">
+            <form id="contactForm" onsubmit="handleSubmit(event)" novalidate>
                 <div class="form-group">
                     <label for="nom">Nom complet *</label>
-                    <input type="text" id="nom" name="nom" required>
+                    <input type="text" id="nom" name="nom" required aria-required="true" aria-label="Nom complet">
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email *</label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required aria-required="true" aria-label="Adresse email">
                 </div>
 
                 <div class="form-group">
                     <label for="telephone">Téléphone</label>
-                    <input type="tel" id="telephone" name="telephone">
+                    <input type="tel" id="telephone" name="telephone" aria-label="Numéro de téléphone">
                 </div>
 
                 <div class="form-group">
                     <label for="sujet">Sujet *</label>
-                    <input type="text" id="sujet" name="sujet" required>
+                    <input type="text" id="sujet" name="sujet" required aria-required="true" aria-label="Sujet du message">
                 </div>
 
                 <div class="form-group">
                     <label for="message">Message *</label>
-                    <textarea id="message" name="message" required></textarea>
+                    <textarea id="message" name="message" required aria-required="true" aria-label="Message"></textarea>
                 </div>
 
-                <button type="submit" class="btn">Envoyer le message</button>
+                <button type="submit" class="btn" aria-label="Envoyer le message">Envoyer le message</button>
             </form>
         </div>
 
         <div class="contact-info">
             <div class="info-card">
                 <h4>📍 Adresse</h4>
-                <p>5 rue de montaugé 31200 Toulouse<br>31200 Toulouse, France</p>
+                <p>5 rue de Montaugé<br>31200 Toulouse, France</p>
             </div>
 
             <div class="info-card">
                 <h4>📞 Téléphone</h4>
-                <p>+33 07 55 83 93</p>
+                <p>+33 7 55 83 93</p>
             </div>
 
             <div class="info-card">
@@ -155,7 +155,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2025 Église éclen - Tous droits réservés</p>
+        <p>&copy; 2025 Église Éclen - Tous droits réservés</p>
         <p style="margin-top: 0.5rem; font-size: 0.95rem;">Que la grâce et la paix vous soient données en abondance</p>
     </footer>
 

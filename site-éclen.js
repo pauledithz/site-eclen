@@ -1,6 +1,7 @@
 // Configuration EmailJS (garde synchronisé)
 const SERVICE_ID = 'service_8ztokan';
-const TEMPLATE_ID = 'template_oa78nlt';
+const TEMPLATE_ADMIN = 'template_8a34wag';   // <-- template notify_admin (admin)
+const TEMPLATE_USER = 'template_oa78nlt';    // <-- template auto-reply (utilisateur)
 const PUBLIC_KEY = 'EKTxooE41vGfUcK9u';
 
 // Si ton template EmailJS nécessite une variable destinataire (to_email), renseigne-la ici.
@@ -49,7 +50,7 @@ function showEmailJsError(text) {
 }
 
 // Validation simple des identifiants
-function validateEmailJsKeys(serviceId, templateId, publicKey, recipientEmail) {
+function validateEmailJsKeys(serviceId, templateAdminId, templateUserId, publicKey, recipientEmail) {
   const messages = [];
   let ok = true;
 
@@ -58,9 +59,14 @@ function validateEmailJsKeys(serviceId, templateId, publicKey, recipientEmail) {
     messages.push('serviceId invalide (doit commencer par "service_...").');
   }
 
-  if (!templateId || typeof templateId !== 'string' || !/^template_[A-Za-z0-9_-]+$/.test(templateId)) {
+  if (!templateAdminId || typeof templateAdminId !== 'string' || !/^template_[A-Za-z0-9_-]+$/.test(templateAdminId)) {
     ok = false;
-    messages.push('templateId invalide (doit commencer par "template_...").');
+    messages.push('templateAdminId invalide (doit commencer par "template_...").');
+  }
+
+  if (!templateUserId || typeof templateUserId !== 'string' || !/^template_[A-Za-z0-9_-]+$/.test(templateUserId)) {
+    ok = false;
+    messages.push('templateUserId invalide (doit commencer par "template_...").');
   }
 
   if (!publicKey || typeof publicKey !== 'string' || !/^[A-Za-z0-9_-]{8,}$/.test(publicKey)) {
@@ -68,7 +74,6 @@ function validateEmailJsKeys(serviceId, templateId, publicKey, recipientEmail) {
     messages.push('publicKey invalide ou trop courte.');
   }
 
-  // recipient facultatif si template contient un destinataire par défaut
   if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.length > 0) {
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRe.test(recipientEmail)) {
@@ -115,8 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const successMessage = document.getElementById('successMessage');
   if (successMessage) successMessage.style.display = 'none';
 
-  // Vérification des clés
-  const validation = validateEmailJsKeys(SERVICE_ID, TEMPLATE_ID, PUBLIC_KEY, RECIPIENT_EMAIL);
+  // Vérification des clés (mise à jour pour 2 templates)
+  const validation = validateEmailJsKeys(SERVICE_ID, TEMPLATE_ADMIN, TEMPLATE_USER, PUBLIC_KEY, RECIPIENT_EMAIL);
   if (!validation.ok) {
     console.error('EmailJS configuration invalide:', validation.messages);
     showEmailJsError(validation.messages.join(' | '));
@@ -152,23 +157,30 @@ async function handleSubmit(event) {
   const sujet = sujetEl ? sujetEl.value.trim() : '';
   const message = messageEl.value.trim();
 
-  // Construis les variables selon celles attendues par ton template EmailJS.
-  // Assure-toi que les noms (from_name, from_email, to_email, message, etc.) correspondent à ton template.
-  const templateParams = {
+  // Paramètres pour le template admin (affiche le message complet aux responsables)
+  const adminParams = {
     from_name: nom,
     from_email: email,
     telephone,
     subject: sujet,
-    message
+    message,
+    date: new Date().toLocaleString(),
+    reply_to: email
   };
 
-  // Si ton template attend une variable "to_email", fournis-la
+  // si le template admin utilise {{to_email}} on le fournit
   if (RECIPIENT_EMAIL && RECIPIENT_EMAIL.length > 0) {
-    templateParams.to_email = RECIPIENT_EMAIL;
+    adminParams.to_email = RECIPIENT_EMAIL;
   }
 
-  // Fournir reply_to est utile pour que la réponse aille vers l'expéditeur
-  templateParams.reply_to = email;
+  // Paramètres pour le template utilisateur (confirmation)
+  const userParams = {
+    to_name: nom,
+    to_email: email,
+    from_name: 'Église Éclen',
+    message: `Bonjour ${nom},\n\nMerci pour votre message (Sujet : ${sujet}). Nous l'avons bien reçu et reviendrons vers vous bientôt.\n\nMessage reçu :\n${message}\n\n— Église Éclen`,
+    reply_to: RECIPIENT_EMAIL || 'contact@eglisegrace.fr'
+  };
 
   if (!window.emailjs || !window.emailjs.__initialized) {
     showEmailJsError('EmailJS non initialisé. Vérifie le chargement du SDK et la clé publique.');
@@ -178,31 +190,34 @@ async function handleSubmit(event) {
   try {
     if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; }
 
-    // Envoi via EmailJS
-    const result = await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+    // Envoi email aux admins
+    try {
+      const resAdmin = await emailjs.send(SERVICE_ID, TEMPLATE_ADMIN, adminParams);
+      console.log('Email admin envoyé', resAdmin);
+    } catch (errAdmin) {
+      console.error('Échec envoi email admin:', errAdmin);
+      showEmailJsError('Impossible d\'envoyer l\'email aux responsables. Voir console.');
+    }
 
-    // EmailJS renvoie souvent { status: 200, text: 'OK' }
-    const success = result && (result.status === 200 || result.status === 'OK' || result.text === 'OK');
-    if (success) {
-      form.reset();
-      const successMessage = document.getElementById('successMessage');
-      if (successMessage) {
-        successMessage.style.display = 'block';
-        setTimeout(() => { successMessage.style.display = 'none'; }, 6000);
-      }
-    } else {
-      console.error('Envoi EmailJS échoué (réponse non OK):', result);
-      let details = '';
-      try { details = JSON.stringify(result); } catch (e) { details = String(result); }
-      showEmailJsError("Erreur lors de l'envoi. Détails: " + details);
-      alert("Une erreur s'est produite lors de l'envoi. Voir console pour détails.");
+    // Envoi email de confirmation à l'utilisateur
+    try {
+      const resUser = await emailjs.send(SERVICE_ID, TEMPLATE_USER, userParams);
+      console.log('Email utilisateur envoyé', resUser);
+    } catch (errUser) {
+      console.error('Échec envoi email utilisateur:', errUser);
+      showEmailJsError('Impossible d\'envoyer l\'email de confirmation à l\'utilisateur. Voir console.');
+    }
+
+    // Succès UI
+    form.reset();
+    const successMessageEl = document.getElementById('successMessage');
+    if (successMessageEl) {
+      successMessageEl.style.display = 'block';
+      setTimeout(() => { successMessageEl.style.display = 'none'; }, 6000);
     }
   } catch (err) {
-    // err peut contenir { status: 422, text: '...' } ou être une exception
-    console.error('Erreur EmailJS:', err);
-    const status = err && err.status ? err.status : 'no-status';
-    const text = err && err.text ? err.text : (err && err.message ? err.message : 'no-text');
-    showEmailJsError(`Impossible d'envoyer le message (status: ${status}) : ${text}`);
+    console.error('Erreur lors du processus d\'envoi:', err);
+    showEmailJsError('Erreur inattendue lors de l\'envoi.');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le message'; }
   }
