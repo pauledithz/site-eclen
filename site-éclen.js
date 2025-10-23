@@ -240,3 +240,194 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
+
+// --- Versets dynamiques / API labs.bible.org ---
+const WEEKLY_VERSES_KEY = 'weeklyVerses_v1';
+const WEEK_START_DAY = 1; // 1 = lundi (début de la semaine pour rotation)
+
+// fallback si l'API est indisponible
+const FALLBACK_VERSES = [
+  { book: 'Jean', chapter: 3, verse: 16, text: "Car Dieu a tant aimé le monde qu'il a donné son Fils unique..." },
+  { book: 'Psaumes', chapter: 23, verse: 1, text: "L'Éternel est mon berger: je ne manquerai de rien." },
+  { book: 'Philippiens', chapter: 4, verse: 13, text: "Je puis tout par celui qui me fortifie." },
+  // ...ajouter quelques versets utiles
+];
+
+/*
+  Option recommandée pour versets en français :
+  - Utiliser d'abord bible-api.com (pas de clé, simple) en demandant la traduction "segond".
+  - Si besoin d'une source plus fiable/traductions officielles, utiliser api.scripture.api.bible (nécessite clé).
+  Remplace API_BIBLE_KEY et BIBLE_ID si vous choisissez api.bible.
+*/
+
+// --- Configuration pour API française ---
+const API_BIBLE_KEY = ''; // <-- optionnel : clé pour https://scripture.api.bible (laisser vide si pas utilisée)
+const BIBLE_ID = '';      // <-- optionnel : id de la version française (à récupérer via l'API si utilisé)
+
+// Pool de références (format lisible). On tire 7 références au hasard chaque début de semaine.
+const REFERENCE_POOL = [
+  'Jean 3:16', 'Psaumes 23:1', 'Philippiens 4:13', 'Romains 8:28', 'Proverbes 3:5',
+  'Matthieu 11:28', 'Ésaïe 40:31', 'Psaumes 46:1', 'Hébreux 11:1', 'Jacques 1:2-3',
+  '1 Corinthiens 13:4-7', 'Luc 6:37', 'Jean 14:6', 'Psaumes 121:1-2', 'Éphésiens 2:8-9',
+  'Romains 12:2', 'Galates 5:22-23', 'Actes 1:8', 'Matthieu 6:33', 'Josué 1:9'
+];
+
+// utilitaire : décode entités HTML (ex: &quot;, &amp;)
+function decodeHtmlEntities(str) {
+  const txt = document.createElement('textarea');
+  txt.innerHTML = str || '';
+  return txt.value;
+}
+
+// formate le texte du verset pour l'injecter en HTML (conserve retours à la ligne)
+function formatVerseHtml(raw) {
+  if (!raw) return '';
+  // décode entités puis remplace retours ligne par <br>
+  const decoded = decodeHtmlEntities(String(raw));
+  return decoded
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('<br>');
+}
+
+// remplace l'ancienne logique fetchRandomVerseFromApi par une version qui récupère le texte en français
+async function fetchVerseByReference(ref) {
+  // 1) essai bible-api.com (pas de clé). demande la traduction "segond" (tester si disponible)
+  try {
+    const url = `https://bible-api.com/${encodeURIComponent(ref)}?translation=segond`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const json = await res.json();
+      // Préférer le tableau 'verses' et conserver les retours à la ligne
+      if (Array.isArray(json.verses) && json.verses.length > 0) {
+        const book = json.verses[0].book_name || '';
+        const chapter = json.verses[0].chapter || null;
+        const verse = json.verses[0].verse || null;
+        const text = json.verses.map(v => v.text).join('\n'); // <-- join with newline
+        if (text) {
+          return { book, chapter, verse, text: String(text).trim() };
+        }
+      }
+      // fallback : some responses expose 'text'
+      const textAlt = json.text;
+      if (textAlt) {
+        const first = Array.isArray(json.verses) && json.verses[0];
+        const book = first ? first.book_name : (json.reference ? json.reference.split(' ')[0] : '');
+        const chapter = first ? first.chapter : null;
+        const verse = first ? first.verse : null;
+        return { book, chapter, verse, text: String(textAlt).trim() };
+      }
+    }
+  } catch (e) {
+    console.warn('bible-api.com failed for', ref, e);
+  }
+
+  // 2) essai scripture.api.bible (si clé et id fournis) — structure variable selon l'API
+  if (API_BIBLE_KEY && BIBLE_ID) {
+    try {
+      const url = `https://api.scripture.api.bible/v1/bibles/${BIBLE_ID}/passages?passage=${encodeURIComponent(ref)}&include-notes=false`;
+      const res = await fetch(url, { headers: { 'api-key': API_BIBLE_KEY } });
+      if (res.ok) {
+        const json = await res.json();
+        // La réponse peut contenir du HTML dans data.content ; on nettoie les balises
+        // tentative pour extraire un texte lisible
+        const raw = (json.data && (json.data.content || (Array.isArray(json.data) && json.data[0]?.content))) || '';
+        const clean = String(raw).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        if (clean) {
+          // on renvoie la référence brute si on ne peut pas parser chapitre/verset proprement
+          return { book: ref.split(' ')[0], chapter: null, verse: null, text: clean };
+        }
+      } else {
+        console.warn('api.bible responded with', res.status, res.statusText);
+      }
+    } catch (e) {
+      console.warn('api.bible failed for', ref, e);
+    }
+  }
+
+  // 3) fallback null (appelant doit utiliser FALLBACK_VERSES)
+  return null;
+}
+
+// crée ou récupère les 7 versets de la semaine en cache (choisit références dans REFERENCE_POOL puis résout le texte via API)
+async function ensureWeeklyVerses() {
+  const weekKey = getWeekStartIso();
+  const stored = JSON.parse(localStorage.getItem(WEEKLY_VERSES_KEY) || 'null');
+
+  if (stored && stored.week === weekKey && Array.isArray(stored.verses) && stored.verses.length === 7) {
+    return stored.verses;
+  }
+
+  // choisir 7 références aléatoires (évite doublons si possible)
+  const pool = [...REFERENCE_POOL];
+  const chosenRefs = [];
+  for (let i = 0; i < 7 && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    chosenRefs.push(pool.splice(idx, 1)[0]);
+  }
+
+  const verses = [];
+  for (let i = 0; i < chosenRefs.length; i++) {
+    const ref = chosenRefs[i];
+    const v = await fetchVerseByReference(ref);
+    if (v) {
+      // si l'API n'a pas renvoyé chapitre/verset, on essaie d'extraire de la référence
+      let chapter = v.chapter, verseNum = v.verse;
+      if (!chapter || !verseNum) {
+        const m = ref.match(/([\d]+):([\d\-–,]+)/);
+        if (m) { chapter = Number(m[1]); verseNum = m[2]; }
+      }
+      verses.push({
+        book: v.book || ref.split(' ')[0],
+        chapter: chapter || '',
+        verse: verseNum || '',
+        text: v.text || ''
+      });
+    } else {
+      // fallback local si l'API échoue
+      verses.push(FALLBACK_VERSES[i % FALLBACK_VERSES.length]);
+    }
+    // pause courte pour politesse
+    await new Promise(r => setTimeout(r, 120));
+  }
+
+  localStorage.setItem(WEEKLY_VERSES_KEY, JSON.stringify({ week: weekKey, verses, createdAt: new Date().toISOString() }));
+  return verses;
+}
+
+// affiche le verset du jour (index basé sur le jour de la semaine)
+async function displayTodayVerse() {
+  const verseTextEl = document.getElementById('verseText');
+  const verseRefEl = document.getElementById('verseRef');
+  if (!verseTextEl || !verseRefEl) return;
+
+  verseTextEl.textContent = 'Chargement du verset...';
+  verseRefEl.textContent = '';
+
+  try {
+    const verses = await ensureWeeklyVerses();
+    const today = new Date();
+    const dayIndex = today.getDay(); // 0..6
+    const indexForMondayStart = (dayIndex + 6) % 7;
+    const verse = verses[indexForMondayStart] || verses[0];
+
+    // utiliser innerHTML pour conserver les retours à la ligne
+    verseTextEl.innerHTML = formatVerseHtml(verse.text);
+    verseRefEl.textContent = `${verse.book} ${verse.chapter}:${verse.verse}`;
+  } catch (e) {
+    console.error('Erreur affichage verset:', e);
+    const v = FALLBACK_VERSES[0];
+    verseTextEl.innerHTML = formatVerseHtml(v.text);
+    verseRefEl.textContent = `${v.book} ${v.chapter}:${v.verse}`;
+  }
+}
+
+// Appel au chargement
+document.addEventListener('DOMContentLoaded', () => {
+  // afficher le verset dès le load
+  displayTodayVerse();
+
+  // optionnel : rafraîchir tous les X ms (ici toutes les 6 heures) si la page reste ouverte
+  setInterval(displayTodayVerse, 1000 * 60 * 60 * 6);
+});
