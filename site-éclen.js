@@ -7,7 +7,7 @@ const PUBLIC_KEY = 'EKTxooE41vGfUcK9u';
 // Si ton template EmailJS nécessite une variable destinataire (to_email), renseigne-la ici.
 // Option 1 (recommandée pour debug) : mettre ton email de réception ici.
 // Option 2 : laisser vide et configurer un destinataire par défaut dans le template EmailJS dashboard.
-const RECIPIENT_EMAIL = 'ro2srecord@gmail.com'; // <-- remplace par ton email ou laisse vide si template définit le destinataire
+const RECIPIENT_EMAIL = ''; // <-- remplace par ton email ou laisse vide si template définit le destinataire
 
 function showSection(sectionName) {
     const sections = document.querySelectorAll('.section');
@@ -206,6 +206,7 @@ async function handleSubmit(event) {
     } catch (errUser) {
       console.error('Échec envoi email utilisateur:', errUser);
       showEmailJsError('Impossible d\'envoyer l\'email de confirmation à l\'utilisateur. Voir console.');
+      console.log(this.RECIPIENT_EMAIL);
     }
 
     // Succès UI
@@ -431,3 +432,87 @@ document.addEventListener('DOMContentLoaded', () => {
   // optionnel : rafraîchir tous les X ms (ici toutes les 6 heures) si la page reste ouverte
   setInterval(displayTodayVerse, 1000 * 60 * 60 * 6);
 });
+
+// Gestion des sections (navigation)
+(function () {
+    function showSection(id) {
+        const prev = document.querySelector('.section.active');
+        if (prev) prev.classList.remove('active');
+        const target = document.getElementById(id);
+        if (target) {
+            target.classList.add('active');
+            // focus pour accessibilité
+            const h = target.querySelector('.section-title') || target.querySelector('h2');
+            if (h) h.focus?.();
+        }
+    }
+
+    // nav links
+    document.querySelectorAll('.nav-links a[data-section]').forEach(a => {
+        a.addEventListener('click', function (e) {
+            e.preventDefault();
+            const sec = this.dataset.section;
+            showSection(sec);
+        });
+    });
+
+    // Verset de la semaine (liste courte en local)
+    const verses = [
+        { text: "L'Éternel est mon berger: je ne manquerai de rien.", ref: "Psaume 23:1" },
+        { text: "Je puis tout par celui qui me fortifie.", ref: "Philippiens 4:13" },
+        { text: "Car Dieu a tant aimé le monde...", ref: "Jean 3:16" },
+        { text: "Cherchez premièrement le royaume de Dieu...", ref: "Matthieu 6:33" }
+    ];
+    (function renderVerse() {
+        const r = Math.floor(Math.random() * verses.length);
+        const v = verses[r];
+        const textEl = document.getElementById('verseText');
+        const refEl = document.getElementById('verseRef');
+        if (textEl) textEl.textContent = v.text;
+        if (refEl) refEl.textContent = v.ref;
+    })();
+
+    // Formulaire de contact
+    const form = document.getElementById('contactForm');
+    const success = document.getElementById('successMessage');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            // validation simple
+            const required = [...form.querySelectorAll('[required]')];
+            for (const el of required) {
+                if (!el.value.trim()) {
+                    el.focus();
+                    return;
+                }
+            }
+
+            // Si vous souhaitez envoyer via EmailJS, décommentez et configurez :
+            // if (window.emailjs) {
+            //     emailjs.init('VOTRE_USER_ID');
+            //     emailjs.send('service_id','template_id', {
+            //         nom: form.nom.value,
+            //         email: form.email.value,
+            //         telephone: form.telephone.value,
+            //         sujet: form.sujet.value,
+            //         message: form.message.value
+            //     }).then(() => { showSuccess(); }, (err) => { console.error(err); showSuccess(); });
+            //     return;
+            // }
+
+            // comportement par défaut local : afficher message et réinitialiser
+            showSuccess();
+        });
+    }
+
+    function showSuccess() {
+        if (success) {
+            success.style.display = 'block';
+            setTimeout(() => { success.style.display = 'none'; }, 5000);
+        }
+        form.reset();
+    }
+
+    // Exposer si besoin
+    window.showSection = showSection;
+})();

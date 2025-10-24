@@ -11,9 +11,9 @@
         <nav aria-label="Navigation principale">
             <div class="logo"><span class="logo-badge" aria-hidden="true">✝</span> Église Éclen Christ Lumière</div>
             <ul class="nav-links" role="menubar">
-                <li role="none"><a role="menuitem" href="#" onclick="showSection('accueil')" aria-label="Aller à l'accueil">Accueil</a></li>
-                <li role="none"><a role="menuitem" href="#" onclick="showSection('documentation')" aria-label="Aller à la documentation">Documentation</a></li>
-                <li role="none"><a role="menuitem" href="#" onclick="showSection('contact')" aria-label="Aller au contact">Contact</a></li>
+                <li role="none"><a role="menuitem" href="#" data-section="accueil" aria-label="Aller à l'accueil">Accueil</a></li>
+                <li role="none"><a role="menuitem" href="#" data-section="Qui sommes nous?" aria-label="Aller à Qui sommes nous?">Qui sommes nous?</a></li>
+                <li role="none"><a role="menuitem" href="#" data-section="contact" aria-label="Aller au contact">Contact</a></li>
             </ul>
         </nav>
     </header>
@@ -53,8 +53,8 @@
         </div>
     </div>
 
-    <div id="documentation" class="section">
-        <h2 class="section-title">Documentation & Ressources</h2>
+    <div id="Qui sommes nous?" class="section">
+        <h2 class="section-title">Qui sommes Nous?</h2>
 
         <div class="doc-section">
             <h3>📖 Enseignements Bibliques</h3>
@@ -102,7 +102,7 @@
                 ✓ Merci pour votre message ! Nous vous répondrons le plus rapidement possible.
             </div>
             
-            <form id="contactForm" onsubmit="handleSubmit(event)" novalidate>
+            <form id="contactForm" novalidate>
                 <div class="form-group">
                     <label for="nom">Nom complet *</label>
                     <input type="text" id="nom" name="nom" required aria-required="true" aria-label="Nom complet">
@@ -140,7 +140,7 @@
 
             <div class="info-card">
                 <h4>📞 Téléphone</h4>
-                <p>+33 7 55 83 93</p>
+                <p>+33 7 55 71 83 93</p>
             </div>
 
             <div class="info-card">
