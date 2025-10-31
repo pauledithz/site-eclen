@@ -516,3 +516,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Exposer si besoin
     window.showSection = showSection;
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-link').forEach(a => {
+    a.addEventListener('mousedown', () => a.classList.add('active'));
+    a.addEventListener('mouseup', () => a.classList.remove('active'));
+    a.addEventListener('mouseleave', () => a.classList.remove('active'));
+    a.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') a.classList.add('active');
+    });
+    a.addEventListener('keyup', () => a.classList.remove('active'));
+  });
+});

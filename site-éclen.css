@@ -1,8 +1,29 @@
-
 * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        a {
+            outline: none;
+            text-decoration: none;
+        }
+
+        a:link {
+            color: white;
+        }
+
+        a:visited {
+            color: white;
+        }
+
+        a:focus {
+            color: #1a1a2e;
+        }
+
+        a:hover {
+            color: rgba(191, 128, 250, 0.4);
+            transition: width 0.3s ease;
         }
 
         body {
@@ -119,6 +140,37 @@
         .nav-links a:hover::after {
             width: 100%;
         }
+
+        /* Styles réutilisables pour les liens de nav */
+        .brand-links a,
+        .nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: inherit;
+        text-decoration: none;
+        padding: 0.18rem 0.3rem;
+        border-radius: 6px;
+        transition: color .18s ease, background-color .18s ease, transform .08s ease;
+        border-bottom: 2px solid transparent;
+        }
+
+        .brand-links a:hover,
+        .brand-link:hover {
+        color: #c00;
+        background-color: rgba(255,0,0,0.04);
+        transform: translateY(-1px);
+        border-bottom-color: #FF0000;
+        }
+
+        .brand-links a:focus,
+        .brand-link:focus {
+        outline: 3px solid rgba(0,0,0,0.08);
+        outline-offset: 3px;
+        }
+
+        /* ajustement icône */
+        .brand-link .fa-youtube { font-size: 1.05em; }
 
         .hero {
             position: relative;
@@ -421,6 +473,49 @@
         .info-card p {
             color: #b8b8d1;
             line-height: 1.8;
+        }
+
+        /* centrer les liens de réseaux et appliquer le style similaire aux liens de nav */
+        .info-card .social-links {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.45rem;
+          padding-top: 0.35rem;
+        }
+
+        .info-card .social-links .brand-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.45rem;
+          color: inherit;
+          text-decoration: none;
+          padding: 0.25rem 0.6rem;
+          border-radius: 6px;
+          transition: color .18s ease, background-color .18s ease, transform .08s ease;
+          border-bottom: 2px solid transparent;
+        }
+
+        .info-card .social-links .brand-link i {
+          font-size: 1.05em;
+          margin-right: 0; /* l'espace est géré par gap */
+        }
+
+        /* couleurs spécifiques pour chaque icône (optionnel) */
+        .info-card .social-links .fa-youtube { color: #FF0000; }
+        .info-card .social-links .fa-facebook { color: #036ea0; }
+        .info-card .social-links .fa-instagram { color: #C13584; }
+        .info-card .social-links .fa-tiktok { color: #000; }
+
+        /* hover / focus */
+        .info-card .social-links .brand-link:hover {
+          background-color: rgba(0,0,0,0.04);
+          transform: translateY(-1px);
+          border-bottom-color: currentColor;
+        }
+        .info-card .social-links .brand-link:focus {
+          outline: 3px solid rgba(0,0,0,0.08);
+          outline-offset: 3px;
         }
 
         footer {
