@@ -85,7 +85,7 @@
             justify-content: center;
             font-size: 1.6rem;       /* taille de la croix */
             font-weight: 700;
-            color: #ec4899;          /* couleur de la croix */
+            color: #ec48ade5;          /* couleur de la croix */
             background: transparent; /* plus de fond */
             width: auto;
             height: auto;
@@ -590,6 +590,9 @@
             font-size: 1.1rem;
             letter-spacing: 1px;
         }
+        .logo-taille {
+            width: 18%;
+        }
 
         @media (max-width: 768px) {
             nav {
@@ -620,10 +623,13 @@
                 grid-template-columns: 1fr;
             }
 
-            /* ajuste la taille du badge sur petits écrans */
+                /* ajuste la taille du badge sur petits écrans */
             .logo-badge {
-                width: 44px;
+                width: 24px;
                 height: 44px;
                 font-size: 1.1rem;
+            }
+            .logo-taille {
+                width: 24px;
             }
         }
