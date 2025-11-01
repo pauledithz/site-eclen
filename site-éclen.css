@@ -600,7 +600,11 @@
             }
 
             .nav-links {
-                gap: 1.5rem;
+                gap: 1.1rem;
+            }
+
+            .nav-links a {
+                font-size: 0.95rem;
             }
 
             .hero h1 {
