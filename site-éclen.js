@@ -1,246 +1,166 @@
-// Configuration EmailJS (garde synchronisé)
+// Configuration EmailJS
 const SERVICE_ID = 'service_8ztokan';
-const TEMPLATE_ADMIN = 'template_8a34wag';   // <-- template notify_admin (admin)
-const TEMPLATE_USER = 'template_oa78nlt';    // <-- template auto-reply (utilisateur)
+const TEMPLATE_ADMIN = 'template_8a34wag';
+const TEMPLATE_USER = 'template_oa78nlt';
 const PUBLIC_KEY = 'EKTxooE41vGfUcK9u';
+const RECIPIENT_EMAIL = 'mdavygael@yahoo.fr';
 
-// Si ton template EmailJS nécessite une variable destinataire (to_email), renseigne-la ici.
-// Option 1 (recommandée pour debug) : mettre ton email de réception ici.
-// Option 2 : laisser vide et configurer un destinataire par défaut dans le template EmailJS dashboard.
-const RECIPIENT_EMAIL = ''; // <-- remplace par ton email ou laisse vide si template définit le destinataire
-
-function showSection(sectionName) {
-    const sections = document.querySelectorAll('.section');
-    sections.forEach(section => {
-        section.classList.remove('active');
-    });
-
-    const heroSection = document.getElementById('hero-section');
-    if (sectionName === 'accueil') {
-        if (heroSection) heroSection.style.display = 'block';
-    } else {
-        if (heroSection) heroSection.style.display = 'none';
-    }
-
-    const targetSection = document.getElementById(sectionName);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Affiche une erreur visible dans la zone contact
+// Utilitaires
 function showEmailJsError(text) {
-  const formContainer = document.querySelector('.contact-form') || document.body;
+  const formContainer = document.querySelector('.contact-form');
   let el = document.getElementById('emailjsError');
   if (!el) {
     el = document.createElement('div');
     el.id = 'emailjsError';
-    el.style.background = '#ffe6e6';
-    el.style.border = '1px solid #ff9090';
-    el.style.color = '#8a1f1f';
-    el.style.padding = '10px';
-    el.style.marginBottom = '10px';
-    el.style.borderRadius = '4px';
-    el.style.fontSize = '0.95rem';
+    el.style.cssText = `
+      background: #ffe6e6;
+      border: 1px solid #ff9090;
+      color: #8a1f1f;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    `;
     formContainer.insertBefore(el, formContainer.firstChild);
   }
-  el.textContent = 'Erreur EmailJS : ' + text;
+  el.textContent = 'Erreur : ' + text;
 }
 
-// Validation simple des identifiants
-function validateEmailJsKeys(serviceId, templateAdminId, templateUserId, publicKey, recipientEmail) {
-  const messages = [];
-  let ok = true;
-
-  if (!serviceId || typeof serviceId !== 'string' || !/^service_[A-Za-z0-9_-]+$/.test(serviceId)) {
-    ok = false;
-    messages.push('serviceId invalide (doit commencer par "service_...").');
-  }
-
-  if (!templateAdminId || typeof templateAdminId !== 'string' || !/^template_[A-Za-z0-9_-]+$/.test(templateAdminId)) {
-    ok = false;
-    messages.push('templateAdminId invalide (doit commencer par "template_...").');
-  }
-
-  if (!templateUserId || typeof templateUserId !== 'string' || !/^template_[A-Za-z0-9_-]+$/.test(templateUserId)) {
-    ok = false;
-    messages.push('templateUserId invalide (doit commencer par "template_...").');
-  }
-
-  if (!publicKey || typeof publicKey !== 'string' || !/^[A-Za-z0-9_-]{8,}$/.test(publicKey)) {
-    ok = false;
-    messages.push('publicKey invalide ou trop courte.');
-  }
-
-  if (recipientEmail && typeof recipientEmail === 'string' && recipientEmail.length > 0) {
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRe.test(recipientEmail)) {
-      ok = false;
-      messages.push('RECIPIENT_EMAIL n\'est pas une adresse email valide.');
-    }
-  }
-
-  return { ok, messages };
-}
-
-// Charge le SDK EmailJS si nécessaire et initialise
-function loadEmailJsAndInit() {
-  function initEmailJs() {
-    if (window.emailjs && !window.emailjs.__initialized) {
-      try {
-        emailjs.init(PUBLIC_KEY);
-        window.emailjs.__initialized = true;
-        console.log('EmailJS initialisé');
-      } catch (e) {
-        console.error('Erreur init EmailJS:', e);
-        showEmailJsError("Erreur lors de l'initialisation EmailJS.");
-      }
-    }
-  }
-
-  if (window.emailjs) {
-    initEmailJs();
-    return;
-  }
-
-  const script = document.createElement('script');
-  script.src = 'https://cdn.emailjs.com/sdk/3.2.0/email.min.js';
-  script.async = true;
-  script.onload = initEmailJs;
-  script.onerror = function () {
-    console.error('Échec chargement EmailJS SDK');
-    showEmailJsError('Échec chargement du SDK EmailJS. Vérifie la connexion ou les bloqueurs.');
-  };
-  document.head.appendChild(script);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const successMessage = document.getElementById('successMessage');
-  if (successMessage) successMessage.style.display = 'none';
-
-  // Vérification des clés (mise à jour pour 2 templates)
-  const validation = validateEmailJsKeys(SERVICE_ID, TEMPLATE_ADMIN, TEMPLATE_USER, PUBLIC_KEY, RECIPIENT_EMAIL);
-  if (!validation.ok) {
-    console.error('EmailJS configuration invalide:', validation.messages);
-    showEmailJsError(validation.messages.join(' | '));
-  }
-
-  // Charge et initialise EmailJS (si nécessaire)
-  loadEmailJsAndInit();
-});
-
+// Gestion du formulaire
 async function handleSubmit(event) {
   event.preventDefault();
+  
   const form = document.getElementById('contactForm');
   if (!form) {
-    showEmailJsError('Formulaire introuvable (id="contactForm").');
+    showEmailJsError('Formulaire introuvable');
     return;
   }
 
   const btn = form.querySelector('button[type="submit"]');
-  const nomEl = document.getElementById('nom');
-  const emailEl = document.getElementById('email');
-  const telephoneEl = document.getElementById('telephone');
-  const sujetEl = document.getElementById('sujet');
-  const messageEl = document.getElementById('message');
+  const nom = document.getElementById('nom')?.value?.trim();
+  const email = document.getElementById('email')?.value?.trim();
+  const telephone = document.getElementById('telephone')?.value?.trim();
+  const sujet = document.getElementById('sujet')?.value?.trim();
+  const message = document.getElementById('message')?.value?.trim();
 
-  if (!nomEl || !emailEl || !messageEl) {
-    showEmailJsError('Champs manquants dans le formulaire (nom, email, message requis).');
-    return;
-  }
-
-  const nom = nomEl.value.trim();
-  const email = emailEl.value.trim();
-  const telephone = telephoneEl ? telephoneEl.value.trim() : '';
-  const sujet = sujetEl ? sujetEl.value.trim() : '';
-  const message = messageEl.value.trim();
-
-  // Paramètres pour le template admin (affiche le message complet aux responsables)
-  const adminParams = {
-    from_name: nom,
-    from_email: email,
-    telephone,
-    subject: sujet,
-    message,
-    date: new Date().toLocaleString(),
-    reply_to: email
-  };
-
-  // si le template admin utilise {{to_email}} on le fournit
-  if (RECIPIENT_EMAIL && RECIPIENT_EMAIL.length > 0) {
-    adminParams.to_email = RECIPIENT_EMAIL;
-  }
-
-  // Paramètres pour le template utilisateur (confirmation)
-  const userParams = {
-    to_name: nom,
-    to_email: email,
-    from_name: 'Église Éclen',
-    message: `Bonjour ${nom},\n\nMerci pour votre message (Sujet : ${sujet}). Nous l'avons bien reçu et reviendrons vers vous bientôt.\n\nMessage reçu :\n${message}\n\n— Église Éclen`,
-    reply_to: RECIPIENT_EMAIL || 'contact@eglisegrace.fr'
-  };
-
-  if (!window.emailjs || !window.emailjs.__initialized) {
-    showEmailJsError('EmailJS non initialisé. Vérifie le chargement du SDK et la clé publique.');
+  if (!nom || !email || !message) {
+    showEmailJsError('Veuillez remplir tous les champs obligatoires');
     return;
   }
 
   try {
-    if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; }
-
-    // Envoi email aux admins
-    try {
-      const resAdmin = await emailjs.send(SERVICE_ID, TEMPLATE_ADMIN, adminParams);
-      console.log('Email admin envoyé', resAdmin);
-    } catch (errAdmin) {
-      console.error('Échec envoi email admin:', errAdmin);
-      showEmailJsError('Impossible d\'envoyer l\'email aux responsables. Voir console.');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Envoi...';
     }
 
-    // Envoi email de confirmation à l'utilisateur
-    try {
-      const resUser = await emailjs.send(SERVICE_ID, TEMPLATE_USER, userParams);
-      console.log('Email utilisateur envoyé', resUser);
-    } catch (errUser) {
-      console.error('Échec envoi email utilisateur:', errUser);
-      showEmailJsError('Impossible d\'envoyer l\'email de confirmation à l\'utilisateur. Voir console.');
-      console.log(this.RECIPIENT_EMAIL);
-    }
+    // Email à l'admin
+    await emailjs.send(SERVICE_ID, TEMPLATE_ADMIN, {
+      from_name: nom,
+      from_email: email,
+      telephone,
+      subject: sujet,
+      message,
+      to_email: RECIPIENT_EMAIL,
+      reply_to: email
+    });
 
-    // Succès UI
+    // Email à l'utilisateur
+    await emailjs.send(SERVICE_ID, TEMPLATE_USER, {
+      to_name: nom,
+      to_email: email,
+      subject: 'Confirmation - Église Éclen',
+      message: `Bonjour ${nom},\n\nNous avons bien reçu votre message.\nNous vous répondrons dans les plus brefs délais.\n\nCordialement,\nÉglise Éclen`,
+      reply_to: RECIPIENT_EMAIL
+    });
+
+    // Succès
     form.reset();
-    const successMessageEl = document.getElementById('successMessage');
-    if (successMessageEl) {
-      successMessageEl.style.display = 'block';
-      setTimeout(() => { successMessageEl.style.display = 'none'; }, 6000);
+    const successMessage = document.getElementById('successMessage');
+    if (successMessage) {
+      successMessage.style.display = 'block';
+      setTimeout(() => successMessage.style.display = 'none', 5000);
     }
+
   } catch (err) {
-    console.error('Erreur lors du processus d\'envoi:', err);
-    showEmailJsError('Erreur inattendue lors de l\'envoi.');
+    console.error('Erreur:', err);
+    showEmailJsError('Erreur lors de l\'envoi. Veuillez réessayer.');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Envoyer le message'; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Envoyer le message';
+    }
   }
 }
 
-// Fallback : attacher handleSubmit si le formulaire existe et qu'il n'utilise pas déjà onsubmit inline
+// Navigation
+function showSection(sectionId) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  
+  const heroSection = document.getElementById('hero-section');
+  if (heroSection) {
+    heroSection.style.display = sectionId === 'accueil' ? 'block' : 'none';
+  }
+  
+  const target = document.getElementById(sectionId);
+  if (target) {
+    target.classList.add('active');
+    const heading = target.querySelector('.section-title');
+    if (heading) heading.focus();
+  }
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
-  const formEl = document.getElementById('contactForm');
-  if (formEl && !formEl.hasAttribute('onsubmit')) {
-    formEl.addEventListener('submit', handleSubmit);
+  // Validation des clés EmailJS
+  function validateEmailJsConfig() {
+    if (!/^[A-Za-z0-9_-]{8,}$/.test(PUBLIC_KEY)) {
+      console.error('EmailJS: PUBLIC_KEY invalide');
+      return false;
+    }
+    if (!/^service_[A-Za-z0-9_-]+$/.test(SERVICE_ID)) {
+      console.error('EmailJS: SERVICE_ID invalide');
+      return false;
+    }
+    if (!/^template_[A-Za-z0-9_-]+$/.test(TEMPLATE_ADMIN)) {
+      console.error('EmailJS: TEMPLATE_ADMIN invalide');
+      return false;
+    }
+    if (!/^template_[A-Za-z0-9_-]+$/.test(TEMPLATE_USER)) {
+      console.error('EmailJS: TEMPLATE_USER invalide');
+      return false;
+    }
+    return true;
   }
-});
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+  if (!validateEmailJsConfig()) {
+    showEmailJsError('Configuration EmailJS invalide. Vérifiez les clés.');
+    return;
+  }
+  
+  // Init EmailJS
+  emailjs.init(PUBLIC_KEY);
+
+  // Form handler
+  const form = document.getElementById('contactForm');
+  if (form) {
+    form.addEventListener('submit', handleSubmit);
+  }
+
+  // Navigation
+  document.querySelectorAll('.nav-links a[data-section]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      showSection(a.dataset.section);
+    });
+  });
+
+  // Versets
+  displayTodayVerse();
+  setInterval(displayTodayVerse, 1000 * 60 * 60 * 6);
+});
 
 // --- Versets dynamiques / API labs.bible.org ---
 const WEEKLY_VERSES_KEY = 'weeklyVerses_v1';
@@ -350,6 +270,19 @@ async function fetchVerseByReference(ref) {
   // 3) fallback null (appelant doit utiliser FALLBACK_VERSES)
   return null;
 }
+
+// Utilitaires pour les versets
+function getWeekStartIso() {
+  const now = new Date();
+  const day = now.getDay(); // 0-6 (dimanche-samedi)
+  const diff = (day + 6) % 7; // Ajustement pour commencer le lundi
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().slice(0, 10);
+}
+
+// Placer cette fonction avant ensureWeeklyVerses()
 
 // crée ou récupère les 7 versets de la semaine en cache (choisit références dans REFERENCE_POOL puis résout le texte via API)
 async function ensureWeeklyVerses() {
@@ -487,20 +420,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Si vous souhaitez envoyer via EmailJS, décommentez et configurez :
-            // if (window.emailjs) {
-            //     emailjs.init('VOTRE_USER_ID');
-            //     emailjs.send('service_id','template_id', {
-            //         nom: form.nom.value,
-            //         email: form.email.value,
-            //         telephone: form.telephone.value,
-            //         sujet: form.sujet.value,
-            //         message: form.message.value
-            //     }).then(() => { showSuccess(); }, (err) => { console.error(err); showSuccess(); });
-            //     return;
-            // }
+            // Si EmailJS est configuré
+            if (window.emailjs) {
+                emailjs.init(PUBLIC_KEY);
+                emailjs.send(SERVICE_ID, TEMPLATE_ADMIN, {
+                    nom: form.nom.value,
+                    email: form.email.value,
+                    telephone: form.telephone.value,
+                    sujet: form.sujet.value,
+                    message: form.message.value
+                }).then(
+                    function() { 
+                        showSuccess();
+                    },
+                    function(error) {
+                        console.error('EmailJS error:', error);
+                        showEmailJsError('Erreur lors de l\'envoi. Veuillez réessayer.');
+                    }
+                );
+                return;
+            }
 
-            // comportement par défaut local : afficher message et réinitialiser
+            // Comportement par défaut si EmailJS non disponible
             showSuccess();
         });
     }
@@ -510,21 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
             success.style.display = 'block';
             setTimeout(() => { success.style.display = 'none'; }, 5000);
         }
-        form.reset();
+        if (form) form.reset();
     }
 
-    // Exposer si besoin
+    // Exposer la fonction showSection globalement si nécessaire
     window.showSection = showSection;
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.nav-link').forEach(a => {
-    a.addEventListener('mousedown', () => a.classList.add('active'));
-    a.addEventListener('mouseup', () => a.classList.remove('active'));
-    a.addEventListener('mouseleave', () => a.classList.remove('active'));
-    a.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') a.classList.add('active');
-    });
-    a.addEventListener('keyup', () => a.classList.remove('active'));
-  });
-});
